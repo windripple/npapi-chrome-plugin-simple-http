@@ -1,0 +1,8 @@
+{
+	"name": "npapi_simple",
+	"version": "1.0",
+	"description": "a simple http request demo.",
+    "plugins":[
+        {"path":"plugin/simplehttp.dll","public":true}
+    ]
+}
