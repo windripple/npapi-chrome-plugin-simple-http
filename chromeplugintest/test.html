@@ -22,12 +22,25 @@ t=function(){
  
     default_headers = "Cookie: "+ "OOFL=115jailbreak; OOFA=%250D%250ETV_V%2508%250C%2506%2506%250D%2508W%250BZP%2540%255D%2507%250F%2503%2506%2507Q%2507TV%255CZXxBD%2519%2502%2509%250BX%2500%2505%2507%2505%2508Z%250FR%2506%2503%2508%250A%255E%255C%2509VUQ%2501%2504T%255D%2502%2504%250D%250B%2500%2504W%2505VWTTTS%2509U%2506%2507%2506%2506P" + CRLF;
     headers = default_headers + CRLF;
-    return test.http(type,host,port,uri,useragent,headers,getdata,postdata,resolveTimeout,connectTimeout,sendTimeout,receiveTimeout);
-}
+    return test.http( type // "GET"或"POST"
+                      ,host // 如"www.hellohtml5.com"
+                      ,port // 80
+                      ,uri // 如"/"
+                      ,useragent //浏览器User Agent
+                      ,headers //其余的header,字符串形式
+                      ,getdata //要发送的GET请求数据如"a=1&b=2"
+                      ,postdata //要发送的POST数据如 "a=1&b=2"
+                      ,resolveTimeout //解析DNS超时时间
+                      ,connectTimeout //链接超时时间
+                      ,sendTimeout //发送请求超时时间
+                      ,receiveTimeout //接收返回超时时间
+                    ); //请求过程中出现任何错误，此函数返回""
+}                                 
 }
 
 </script>
 </head>
+<body>
 <embed id="pluginObj" type="application/x-simplehttp"> 
-<body></body>
+</body>
 </html>
