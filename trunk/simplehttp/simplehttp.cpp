@@ -1,7 +1,7 @@
 #include "plugin.h"
 #include "simplehttp.h"
 
-#pragma comment(lib, "winhttp")
+#pragma comment(lib, "winhttp.lib")
 #include <windows.h>
 #include <winhttp.h>
 #include <string>
