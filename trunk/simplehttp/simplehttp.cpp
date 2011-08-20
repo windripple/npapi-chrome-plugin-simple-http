@@ -18,6 +18,15 @@ std::wstring s2ws(const std::string& s)
     return r;
 }
 
+//borrowed from http://naclports.googlecode.com/svn-history/r120/trunk/src/examples/scriptable/matrix_npapi/matrix_comp.cc
+std::string CreateString(const NPString& npString) {
+    std::string ret_value;
+	for (unsigned int i = 0; i < npString.UTF8Length; ++i) {
+	    ret_value += npString.UTF8Characters[i];
+	}
+	return ret_value;
+}
+
 using namespace std;
 
 bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
@@ -31,50 +40,49 @@ bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
 	string additionalheaders = "";
 	string getdata = "";
 	string postdata = "";
-
 	unsigned int resolveTimeout = 10000;
 	unsigned int connectTimeout = 10000;
 	unsigned int sendTimeout = 10000;
 	unsigned int receiveTimeout = 10000;
 
-	for( int i=0;i<argCount;i++){
+	for( unsigned int i=0;i<argCount;i++){
 		NPVariant arg = args[i];
 		switch (i){
 			case 0:
-				type = arg.value.stringValue.UTF8Characters;
+				type = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 1:
-				host = arg.value.stringValue.UTF8Characters;
+				host = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 2:
-				port = arg.value.intValue;
+				port = NPVARIANT_TO_INT32(arg);
 				break;
 			case 3:
-				uri = arg.value.stringValue.UTF8Characters;
+				uri = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 4:
-				useragent = arg.value.stringValue.UTF8Characters;
+				useragent = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 5:
-				additionalheaders = arg.value.stringValue.UTF8Characters;
+				additionalheaders = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 6:
-				getdata = arg.value.stringValue.UTF8Characters;
+				getdata = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 7:
-				postdata = arg.value.stringValue.UTF8Characters;
+				postdata = CreateString(NPVARIANT_TO_STRING(arg));
 				break;
 			case 8:
-				resolveTimeout = arg.value.intValue;
+				resolveTimeout = NPVARIANT_TO_INT32(arg);
 				break;
 			case 9:
-				connectTimeout = arg.value.intValue;
+				connectTimeout = NPVARIANT_TO_INT32(arg);
 				break;
 			case 10:
-				sendTimeout = arg.value.intValue;
+				sendTimeout = NPVARIANT_TO_INT32(arg);
 				break;
 			case 11:
-				receiveTimeout = arg.value.intValue;
+				receiveTimeout = NPVARIANT_TO_INT32(arg);
 				break;
 		}
 	}
@@ -99,16 +107,18 @@ bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
 		goto endHttpRequest;
 	};
 
-	if(hSession){//session建立不成功则退出
+	if(hSession){
+		std::wstring hostTemp = s2ws(host);
+		LPCWSTR whost = hostTemp.c_str();
 		hConnect = WinHttpConnect( hSession,
-											s2ws(host).c_str(),
+			                                whost,
 											port,
 											0);
 	}else{
 		goto endHttpRequest;
 	}
 
-	if(hConnect){//connection建立不成功则退出
+	if(hConnect){
 		if(!usePost){
 			hRequest = WinHttpOpenRequest( hConnect,
 									   s2ws(type).c_str(),
@@ -131,19 +141,16 @@ bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
 		goto endHttpRequest;
 	}
 		
-	//清除默认的cookie
 	if(hRequest)
 		bResults = WinHttpAddRequestHeaders( hRequest, 
 													  L"Cookie:", 
                                                       -1, 
                                                       WINHTTP_ADDREQ_FLAG_REPLACE);
-	//自定义header
 	if(hRequest)
 		bResults = WinHttpAddRequestHeaders( hRequest,
 													  s2ws(additionalheaders).c_str(),
 													  -1,
 													  WINHTTP_ADDREQ_FLAG_ADD);
-	//post数据
 	if(hRequest)
 	{
 		if(usePost){
@@ -173,7 +180,7 @@ bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
 		}
 	}
 
-	if(bResults){//发送http建立不成功则退出
+	if(bResults){
 		bResults = WinHttpReceiveResponse(hRequest,NULL);
 	}else{
 		goto endHttpRequest;
@@ -206,10 +213,16 @@ bool HttpRequest(ScriptablePluginObject* obj, const NPVariant* args,
 			}
 		}while(dwSize>0);
 	}
-
-	endHttpRequest:
+	
+    endHttpRequest:
+	if (page == "") {
+		char errString[20];
+	    DWORD err = GetLastError();
+		sprintf_s(errString,"%d",err);
+		page.append(errString);
+	}
 	char* npOutString = (char *)npnfuncs->memalloc(page.size()+1);
-	strcpy(npOutString,page.c_str());
+	strcpy_s(npOutString,strlen(page.c_str())+1,page.c_str());
 	STRINGZ_TO_NPVARIANT(npOutString,*result);
 	if( hRequest ) WinHttpCloseHandle( hRequest );
     if( hConnect ) WinHttpCloseHandle( hConnect );
