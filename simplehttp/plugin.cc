@@ -44,7 +44,7 @@
 #include "plugin.h"
 #include "simplehttp.h"
 
-const char* kHttp = "http";
+static const char *plugin_method_http = "http";
 
 static NPClass plugin_ref_obj = {
   NP_CLASS_STRUCT_VERSION,
@@ -73,14 +73,10 @@ void ScriptablePluginObject::Deallocate(NPObject* obj) {
 }
 
 bool ScriptablePluginObject::HasMethod(NPObject* obj, NPIdentifier methodName) {
-	char* name = npnfuncs->utf8fromidentifier(methodName);
-	bool ret_val = false;
-	if(!name) return ret_val;
-	if(!strcmp(name,kHttp)){
-		return true;
-	}
-	npnfuncs->memfree(name);
-	return ret_val;
+	NPUTF8 *name = npnfuncs->utf8fromidentifier(methodName);
+    bool result = strcmp(name, plugin_method_http) == 0;
+    npnfuncs->memfree(name);
+    return result;
 }
 
 bool ScriptablePluginObject::InvokeDefault(NPObject* obj, const NPVariant* args,
@@ -90,21 +86,21 @@ bool ScriptablePluginObject::InvokeDefault(NPObject* obj, const NPVariant* args,
 
 bool ScriptablePluginObject::Invoke(NPObject* obj, NPIdentifier methodName,
                      const NPVariant* args, uint32_t argCount,
-                     NPVariant* result) {
-  ScriptablePluginObject *thisObj = (ScriptablePluginObject*)obj;
-  char* name = npnfuncs->utf8fromidentifier(methodName);
-  bool ret_val = false;
-  if (!name) {
-    return ret_val;
-  }
-  if(!strcmp(name, kHttp)){
-	 ret_val = HttpRequest(thisObj,args,argCount,result);
-  }else {
-    // Exception handling. 
-    npnfuncs->setexception(obj, "Unknown method");
-  }
-  npnfuncs->memfree(name);
-  return ret_val;
+                     NPVariant* result){
+	ScriptablePluginObject *thisObj = (ScriptablePluginObject*)obj;
+	// Make sure the method called is "open".
+    NPUTF8 *name = npnfuncs->utf8fromidentifier(methodName);
+    if(strcmp(name, plugin_method_http) == 0) {
+        npnfuncs->memfree(name);
+        BOOLEAN_TO_NPVARIANT(false, *result);
+        // Meke sure the arugment has at least one String parameter.
+        if(argCount > 0 && NPVARIANT_IS_STRING(args[0])) {
+            HttpRequest(thisObj,args,argCount,result);
+        }
+        return true;
+    }
+    npnfuncs->memfree(name);
+    return false;
 }
 
 bool ScriptablePluginObject::HasProperty(NPObject* obj, NPIdentifier propertyName) {
