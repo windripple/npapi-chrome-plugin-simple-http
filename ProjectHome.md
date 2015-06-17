@@ -1,0 +1,1 @@
+a simple npapi sample project  to get or post data to url
